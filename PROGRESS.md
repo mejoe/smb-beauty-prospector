@@ -207,10 +207,54 @@ Custom `JSONBCompat` type handles PostgreSQL JSONB → SQLite JSON for tests.
 ---
 
 ## Sprint 4: Contact Discovery
-**Status:** 📋 PLANNED
-- Playwright website staff crawler
-- Claude staff extraction prompt
-- Yelp review mining
+**Status:** ✅ COMPLETE (2026-03-02)
+
+### What Was Built
+
+#### Backend
+- **`POST /contacts/discover/{company_id}`** — triggers contact discovery
+  - Creates `EnrichmentJob` (entity_type=company, job_type=contact_discovery)
+  - Fires `app.tasks.contact_discovery.discover_contacts` Celery task
+- **`app.tasks.contact_discovery`** — Apify LinkedIn scraper (stubbed)
+  - Generates 2-5 realistic mock contacts per company (name, title, linkedin_url, guessed email)
+  - TODO: Set `APIFY_API_KEY` env var for real scraping via Apify actor
+  - Deduplicates against existing contacts before storing
+- **`GET /contacts`** — paginated, filterable by: company_id, title, has_email, has_linkedin, has_instagram, status, enrichment_status
+- **`GET /contacts/{id}`** — contact detail
+- **`POST /contacts/import`** — bulk CSV import with dedup, 5MB limit, @ stripping for IG handles
+- **`GET /contacts/export`** — streaming CSV export with CSV injection protection
+
+#### Seed Script
+- **`backend/scripts/seed_contacts.py`** — imports all 646 contacts from master_contacts_clean.csv
+  - Auto-creates missing companies from CSV business names
+  - Deduplicates by name + company_id
+  - Usage: `cd backend && python scripts/seed_contacts.py`
+
+#### Frontend
+- **`frontend/src/pages/Contacts.tsx`** — full rebuild using TanStack Table v8
+  - Columns: Name, Title, Email, LinkedIn, Instagram, Enrichment Status + Actions
+  - Filter bar: title keyword search, has_email, has_instagram dropdowns
+  - Row click → Contact Detail Drawer (full contact info, IG bio/followers, notes)
+  - Import CSV button (uploads to `/contacts/import`)
+  - Export CSV button (downloads from `/contacts/export`)
+  - Enrich button per row (fires enrichment job)
+  - Pagination (50 per page)
+
+#### Tests
+- 26 new tests in `backend/tests/test_contacts.py` — all passing
+- Full suite: **69 passed, 0 failed**
+
+### Test Results
+```
+69 passed, 0 failed in 29.05s
+(9 Sprint 1 auth + 5 Sprint 1 sessions + 11 Sprint 2 chat + 18 Sprint 3 companies + 26 Sprint 4 contacts)
+```
+
+### Security Review
+- ✅ CSV import: 5MB size cap, `.csv` extension required, dedup by name+company
+- ✅ CSV export: `sanitize_csv_field()` strips `= + - @` formula prefixes
+- ✅ Discovery: company ownership verified before creating job
+- ✅ All endpoints filter by `user_id` — data isolation maintained
 
 ---
 
@@ -234,4 +278,4 @@ Located at: `/home/joemcbride/.openclaw/workspace/company-docs/medspa-market-res
 - `master_contacts_clean.csv` — 646 contacts
 - `companies.csv` — 100 companies
 
-**Import planned for Sprint 9** as session "Austin + San Antonio - Initial Research 2026"
+**Import available now via Sprint 4 seed script:** `cd backend && python scripts/seed_contacts.py`

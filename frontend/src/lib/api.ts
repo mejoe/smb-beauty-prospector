@@ -93,6 +93,14 @@ export const contactsApi = {
   delete: (id: string) => api.delete(`/contacts/${id}`),
   enrich: (id: string) => api.post(`/contacts/${id}/enrich`),
   bulkEnrich: (ids: string[]) => api.post('/contacts/bulk-enrich', ids),
+  discover: (companyId: string) => api.post(`/contacts/discover/${companyId}`),
+  importCsv: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/contacts/import', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+  },
+  exportCsv: (params?: object) =>
+    api.get('/contacts/export', { params, responseType: 'blob' }),
 }
 
 // Outreach API
