@@ -120,9 +120,14 @@ export const outreachApi = {
 // Instagram API
 export const instagramApi = {
   sessionStatus: () => api.get('/instagram/session-status'),
+  sessionHealth: () => api.get('/instagram/session/health'),
   saveSession: (username: string, cookiesJson: string) =>
     api.post('/instagram/session', { username, cookies_json: cookiesJson }),
   deleteSession: () => api.delete('/instagram/session'),
+  getQueue: (params?: object) => api.get('/instagram/queue', { params }),
+  enrichContact: (contactId: string) => api.post(`/instagram/enrich/${contactId}`),
+  bulkEnrich: (contactIds: string[]) => api.post('/instagram/bulk-enrich', { contact_ids: contactIds }),
+  enrichAllPending: () => api.post('/instagram/enrich-all-pending'),
 }
 
 // Jobs API
