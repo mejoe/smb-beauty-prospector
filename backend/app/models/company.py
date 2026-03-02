@@ -32,6 +32,7 @@ class Company(Base):
     instagram_followers: Mapped[int | None] = mapped_column(Integer)
     instagram_bio: Mapped[str | None] = mapped_column(Text)
     instagram_profile: Mapped[dict | None] = mapped_column(JSONB)
+    linkedin_url: Mapped[str | None] = mapped_column(Text)
 
     # Discovery metadata
     yelp_url: Mapped[str | None] = mapped_column(Text)

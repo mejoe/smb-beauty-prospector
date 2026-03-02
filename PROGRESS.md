@@ -135,13 +135,74 @@ Custom `JSONBCompat` type handles PostgreSQL JSONB → SQLite JSON for tests.
 
 ---
 
-## Sprint 3: Company Discovery Engine
-**Status:** 📋 PLANNED
-- Google Places API (stub with mock data, env var: `GOOGLE_PLACES_API_KEY`)
-- Yelp Fusion API (stub with mock data, env var: `YELP_API_KEY`)
-- SerpAPI (stub with mock data, env var: `SERP_API_KEY`)
-- Instagram hashtag discovery (Playwright, uses IG session)
-- Deduplication logic
+## Sprint 3: Company Discovery ✅ COMPLETE
+**Date:** 2026-03-02
+
+### What Was Built
+
+#### Backend
+- **`POST /companies/search`** — triggers discovery from session's `search_config`
+  - Verifies session ownership
+  - Creates `EnrichmentJob` (entity_type="session", status=running)
+  - Fires Celery task `discover_companies`; graceful fallback if Celery offline
+- **`tasks.discover_companies` Celery task** (fully wired, realistic stubs)
+  - STUB Google Places API — `GOOGLE_PLACES_API_KEY` env var to enable real calls
+  - STUB Yelp Fusion API — `YELP_API_KEY` env var to enable real calls
+  - Merge + dedup by `name_normalized` + city
+  - Stores results in `companies` table, updates job status to complete
+- **`GET /companies`** — enhanced with `state` and `has_linkedin` filters
+- **`GET /companies/{id}`** — returns `CompanyDetailResponse` with `contact_count`
+- **`POST /companies/import`** — bulk CSV import
+  - Flexible column mapping (handles any reasonable CSV header names)
+  - Deduplication by name_normalized + city
+  - CSV injection prevention (strips leading `= + - @`)
+  - 5MB file size cap; BOM-aware (utf-8-sig)
+- **`GET /companies/export`** — CSV export with filters, CSV injection safe
+- **`Company` model** — added `linkedin_url` field
+- **`CompanyDetailResponse`** schema with `contact_count`, `last_enriched_at`, etc.
+
+#### Seed Script
+- `backend/scripts/seed_companies.py` — imports all 100 companies from `companies.csv`
+  - Creates seed user if not found
+  - Deduplicates against existing DB entries
+  - Usage: `python scripts/seed_companies.py [--user-email X] [--csv path]`
+
+#### Frontend (`Companies.tsx`)
+- **TanStack Table** with sortable columns: name, city, state, industry, instagram, contacts, status
+- **Filter bar**: city (text input), industry (select), has_instagram (yes/no/all)
+- **Row click → company detail drawer** (slide-in panel with all fields + contact count)
+- **"Import CSV" button** — file picker, calls `POST /companies/import`, shows toast
+- **"Discover More" button** — calls search from active session's `search_config`, shows toast
+- **"Export CSV" button** — downloads filtered CSV from server
+- Added `import` and `export` methods to `companiesApi` in `api.ts`
+
+#### Tests (`tests/test_companies.py`, 18 new tests)
+- CRUD: create, list, get detail, update, delete, 404 handling
+- Filters: city, state, has_instagram, pagination (non-overlapping pages)
+- CSV import: happy path (3 companies), deduplication, non-CSV rejection
+- CSV export: content verification, filter-aware export
+- Search: invalid session → 404, valid session → job created
+- Auth: unauthenticated access → 401
+
+### Test Results
+```
+43 passed, 0 failed in 21.62s
+(9 Sprint 1 auth + 5 Sprint 1 sessions + 11 Sprint 2 chat + 18 Sprint 3 companies)
+```
+
+### Security Review
+- ✅ SQL injection: all queries use SQLAlchemy ORM with bound params
+- ✅ CSV injection: `sanitize_csv_field()` strips `= + - @` prefixes in export
+- ✅ Pagination: `ge=0` offset, `ge=1 le=500` limit constraints
+- ✅ File size limit: 5MB cap on CSV import
+- ✅ Session ownership: search endpoint verifies session belongs to current user
+- ✅ Data isolation: all queries filter by `user_id`
+
+### Key Decisions / Notes
+- Discovery task uses sync SQLAlchemy (not async) — Celery workers don't use asyncio
+- `linkedin_url` added to Company model (no migration needed — SQLite tests use `create_all`)
+- Export uses streaming response to handle large datasets
+- Stub data is realistic SA/ATX medspa data matching the real CSV format
 
 ---
 

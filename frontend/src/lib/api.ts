@@ -73,6 +73,15 @@ export const companiesApi = {
   delete: (id: string) => api.delete(`/companies/${id}`),
   search: (sessionId: string, searchConfig?: object) =>
     api.post('/companies/search', { session_id: sessionId, search_config: searchConfig }),
+  import: (file: File, sessionId?: string) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post(`/companies/import${sessionId ? `?session_id=${sessionId}` : ''}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  export: (params?: object) =>
+    api.get('/companies/export', { params, responseType: 'blob' }),
 }
 
 // Contacts API
