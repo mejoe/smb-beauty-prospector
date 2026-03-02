@@ -90,17 +90,48 @@ Custom `JSONBCompat` type handles PostgreSQL JSONB → SQLite JSON for tests.
 
 ---
 
-## Sprint 2: AI Chat + Session
-**Status:** 🔜 NEXT
+## Sprint 2: AI Chat + Session ✅ COMPLETE
+**Date:** 2026-03-02
 
-**Plan:**
-- Implement `POST /chat` with Claude SSE streaming (using `anthropic` SDK)
-- Chat message persistence with history loading
-- `<search_config>` block detection → update session config
-- Frontend: upgrade ChatSession.tsx to parse SSE stream
-- Frontend: Search config preview card in session layout
+### What Was Built
 
-**Prerequisite:** `pip install anthropic` (already in requirements.txt)
+#### Backend
+- **`POST /chat`** — full Claude SSE streaming endpoint
+  - `StreamingResponse` with `text/event-stream` content type
+  - Emits `{"type": "token", "text": "..."}` events per chunk
+  - Emits `{"type": "done", "message_id": "...", "search_config": {...}, "job_id": "..."}` on finish
+  - Emits `{"type": "error", "message": "..."}` on exception
+  - Graceful stub mode when `ANTHROPIC_API_KEY` is not set — exercises full SSE pipeline with canned response
+- **Conversation history** — loads full `chat_messages` table for session on every request; passes to Claude as messages array
+- **Message persistence** — user message and assistant response both saved to `chat_messages`
+- **`<search_config>` detection** — `extract_search_config()` regex parses XML-style block, validates JSON inside
+  - If found: updates `session.search_config`, creates `EnrichmentJob` stub (status=queued), emits job_id in done event
+- System prompt exactly per spec (B2B prospecting assistant for beauty/aesthetics)
+
+#### Frontend
+- **Two-panel layout** — left: streaming chat, right: search config card
+- **Native `fetch` + SSE parsing** — replaces axios mutation; reads SSE stream token by token
+- **Live streaming display** — assistant response builds in-place as tokens arrive (react-markdown rendered)
+- **Search config preview card** — shows industries, geographies, target roles, filters as styled tag pills
+- **"Launch Search" button** — enabled once `search_config` detected; calls `POST /companies/search`
+- **Job status polling** — right panel polls `/jobs/{id}` every 3s and shows running/complete/failed badge
+- History restoration — on page load, restores `search_config` from last assistant message with metadata
+
+#### Tests (new — `tests/test_chat.py`, 11 tests)
+- `extract_search_config` unit tests: valid block, no block, invalid JSON, full config, whitespace
+- Integration: auth required, unknown session, stub SSE streaming, message persistence, history accumulation, cross-user isolation
+
+### Test Results
+```
+25 passed, 0 failed in 12.47s
+(14 Sprint 1 + 11 Sprint 2)
+```
+
+### Key Decisions / Notes
+- `anthropic` library installed directly into venv site-packages (venv has no pip binary)
+- `aiosqlite` also installed same way (needed for test isolation)
+- Stub mode returns chunked canned response — ensures SSE pipeline works without API key
+- Used native `fetch` in frontend for streaming (axios doesn't support streaming in browser)
 
 ---
 
