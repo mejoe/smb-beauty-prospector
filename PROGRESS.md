@@ -376,3 +376,120 @@ Public government records, no authentication required. hiQ + Bright Data precede
 - Surfaces individual estheticians as contacts + future prospects
 - Staff count = proxy for business size and deal potential
 - Texas alone: 100k+ active esthetician licenses
+
+---
+
+## Sprint 11: Chrome Extension — Instagram Profile Capture (PLANNED)
+
+### Goal
+Browser extension that captures public Instagram business profile data as the sales rep naturally browses, syncing to BeautyProspector automatically. No bots, no server-side scraping — user's own session, their own browsing.
+
+### Legal Posture
+- Extension captures public business profiles the user intentionally visits
+- User's authenticated session makes all requests (not our servers)
+- Disclosed data collection in Chrome Web Store listing + privacy policy
+- Fundamentally different from server-side scraping — same model as Hunter.io, Kaspr, LinkedIn Sales Navigator extension
+
+### Features
+1. **Content script on Instagram profile pages**
+   - Detects when user is on a business/creator profile
+   - Extracts: handle, display name, bio, follower count, following, post count, category label, email (if in bio), phone (if in bio), website link, location
+   - Reads story highlight titles, pinned post captions
+   - Captures engagement signals: avg likes/comments on recent posts
+
+2. **"Save to BeautyProspector" button**
+   - Injected directly onto the Instagram profile page
+   - One click → profile saved + linked to existing company or creates new contact
+   - Visual confirmation (toast notification)
+
+3. **Auto-detect medspa/beauty profiles**
+   - Extension highlights profiles matching beauty/aesthetics categories
+   - Badge shows if profile is already in BeautyProspector
+
+4. **Background sync**
+   - Auth token stored in extension (linked to user's BeautyProspector account)
+   - Syncs captured profiles to API in real time
+
+5. **Future: Assisted DM (v2)**
+   - Surface suggested message templates on profile page
+   - Rep clicks send → sends from their own IG account
+   - No automation — just a template injector
+
+### Tech Stack
+- Manifest V3 Chrome Extension
+- Vanilla JS content script (no build step needed for MVP)
+- Communicates with existing BeautyProspector API (`/api/contacts`, `/api/companies`)
+- Auth via stored JWT token
+
+### Distribution
+- Chrome Web Store (public listing)
+- Viral mechanic: every rep who installs contributes to shared enrichment database
+- Network effects: more users = richer data for everyone
+
+---
+
+## Sprint 12: Data Pipeline — Outscraper + Multi-Source Enrichment (PLANNED)
+
+### Goal
+Replace manual company seeding with an automated, multi-source data pipeline that continuously discovers and enriches medspa/beauty businesses by territory.
+
+### Data Stack (in priority order)
+
+**Layer 1 — Discovery (Outscraper API)**
+- Source: Google Maps via Outscraper API
+- Data: business name, address, phone, website, category, rating, review count
+- Cost: ~$3/1,000 records (negligible)
+- Use: seed new territories on demand
+- Implementation: scheduled Celery task, triggered by territory + category input
+
+**Layer 2 — Social Enrichment (Instagram — Extension + Scraper)**
+- Source: public Instagram profiles (extension-captured + server-side public profiles)
+- Data: handle, followers, bio, contact info, post cadence, engagement rate
+- Use: qualify businesses, surface active operators vs dormant
+
+**Layer 3 — License Verification (State Boards)**
+- Source: state esthetician/cosmetology license databases (Texas TDLR first)
+- Data: licensed staff names, license type, status, issue/expiry date, business address
+- Cost: free (public records)
+- Use: staff count = deal size proxy; individual names = contact discovery
+- Implementation: weekly Celery scrape task per state
+
+**Layer 4 — Health Score (Google Reviews)**
+- Source: Outscraper (review count + rating + recent review velocity)
+- Data: rating, total reviews, reviews in last 90 days
+- Use: "business momentum" score — growing businesses buy more
+- Implementation: enrichment field on company record
+
+**Layer 5 — Intent Signal (New Business Registrations)**
+- Source: state SOS new business filings (public), SBA data
+- Data: business name, registration date, address, owner name
+- Use: "just opened" flag = highest intent — they're buying everything right now
+- Implementation: monthly scrape, flag companies < 6 months old
+
+**Layer 6 — Supplemental Discovery (Yelp Fusion API)**
+- Source: Yelp Fusion API (legitimate API, 5,000 calls/day free)
+- Data: business listings not on Google Maps, additional reviews/categories
+- Use: catch businesses that don't show up well in Google
+- Cost: free tier is sufficient
+
+### New DB Fields
+- `outscraper_place_id` — Google Maps unique ID for deduplication
+- `yelp_id` — Yelp business ID
+- `licensed_staff_count` — from state license DB
+- `business_age_months` — calculated from registration date
+- `is_new_business` — boolean, < 6 months old
+- `google_review_count`, `google_rating`
+- `review_velocity_90d` — reviews in last 90 days
+- `momentum_score` — composite: reviews + IG activity + license count
+
+### Celery Tasks to Add
+- `task_seed_territory(city, category, radius_miles)` — Outscraper → DB
+- `task_refresh_licenses(state)` — state board scrape → enrich companies
+- `task_refresh_reviews(company_id)` — Outscraper review refresh
+- `task_scan_new_registrations(state)` — SOS filings → new business flags
+- `task_score_momentum(company_id)` — recalculate momentum score
+
+### UI Changes
+- Territory seeding wizard ("Add Austin medspas → auto-discover")
+- Company list: sortable by momentum score, new business flag, staff count
+- Filter: "newly licensed staff," "opened < 6 months," "high review velocity"
