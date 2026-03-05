@@ -14,8 +14,25 @@ from app.config import settings
 # Import all models so they're registered with Base
 import app.models  # noqa: F401
 
+# Normalize DATABASE_URL for Railway — convert postgres:// or postgresql:// to asyncpg
+def get_async_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgresql://") and "+asyncpg" not in url:
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+def get_sync_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql://", 1)
+    return url
+
+_raw_db_url = os.environ.get("DATABASE_URL", settings.DATABASE_URL)
+ASYNC_DB_URL = get_async_url(_raw_db_url)
+SYNC_DB_URL = get_sync_url(_raw_db_url)
+
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
+config.set_main_option("sqlalchemy.url", SYNC_DB_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -43,7 +60,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL_SYNC
+    configuration["sqlalchemy.url"] = ASYNC_DB_URL
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
