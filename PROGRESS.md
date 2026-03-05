@@ -329,3 +329,50 @@ Located at: `/home/joemcbride/.openclaw/workspace/company-docs/medspa-market-res
 - `companies.csv` — 100 companies
 
 **Import available now via Sprint 4 seed script:** `cd backend && python scripts/seed_contacts.py`
+
+---
+
+## Sprint 10: License Data Enrichment (PLANNED)
+
+### Goal
+Scrape state esthetician/cosmetology license databases to enrich company and contact data with verified public record information nobody else has aggregated for sales purposes.
+
+### Features
+1. **Texas TDLR scraper** — first state, covers Austin/San Antonio/Dallas/Houston
+   - URL: https://www.tdlr.texas.gov/LicenseSearch/
+   - Data: name, license type, status, issue/expiry date, business address
+   - Match to existing companies by address proximity
+
+2. **Multi-state scraper framework**
+   - Colorado (nightly data export API — easiest)
+   - California (DCA search)
+   - Florida (bulk download available)
+   - Extensible to all 50 states
+
+3. **Company enrichment**
+   - Add `licensed_staff_count` field to companies table
+   - Cross-reference license addresses with company addresses
+   - Flag high-staff-count locations as priority targets
+
+4. **Contact enrichment**
+   - Add individual estheticians as contacts linked to their employer
+   - Newly licensed (< 6 months) flagged as future business owner prospects
+
+5. **License status monitoring**
+   - Weekly refresh of license status
+   - Alert when a contact's license expires or gets suspended
+
+6. **Frontend — License Data tab**
+   - Filter companies by licensed staff count
+   - View individual licenses per company
+   - "Newly licensed" prospect list
+
+### Legal basis
+Public government records, no authentication required. hiQ + Bright Data precedent applies. Government data = no copyright concern.
+
+### Why this matters
+- Differentiated data ZoomInfo/Apollo don't have
+- Verifies businesses are legitimate operators
+- Surfaces individual estheticians as contacts + future prospects
+- Staff count = proxy for business size and deal potential
+- Texas alone: 100k+ active esthetician licenses
