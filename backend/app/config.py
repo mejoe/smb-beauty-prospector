@@ -15,6 +15,15 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/beautyprospector"
     DATABASE_URL_SYNC: str = "postgresql://postgres:postgres@localhost:5432/beautyprospector"
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Railway injects postgresql:// — convert to async driver
+        if self.DATABASE_URL.startswith("postgresql://"):
+            object.__setattr__(self, "DATABASE_URL", self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1))
+        if self.DATABASE_URL.startswith("postgres://"):
+            object.__setattr__(self, "DATABASE_URL", self.DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1))
+            object.__setattr__(self, "DATABASE_URL_SYNC", self.DATABASE_URL_SYNC.replace("postgres://", "postgresql://", 1))
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
@@ -42,7 +51,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: Optional[str] = None
 
     # CORS
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000", "https://frontend-service-production-a3ed.up.railway.app"]
 
     model_config = {"env_file": ".env", "case_sensitive": True}
 
