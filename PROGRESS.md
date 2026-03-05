@@ -493,3 +493,81 @@ Replace manual company seeding with an automated, multi-source data pipeline tha
 - Territory seeding wizard ("Add Austin medspas → auto-discover")
 - Company list: sortable by momentum score, new business flag, staff count
 - Filter: "newly licensed staff," "opened < 6 months," "high review velocity"
+
+---
+
+## Design Partner Research — Girlfriend (PRX/Wiqo Field Rep, Austin/San Antonio)
+
+*Captured 2026-03-05 from Joe's conversation*
+
+### Core Pain Points Identified
+
+**1. Territory + Time Coordination**
+"I'm going to be in San Antonio northside next week — who should I visit?"
+- Need to define a geographic zone + date window
+- Surface top prospects within that zone
+- Outreach should only offer scheduling within that time window for in-person
+- Virtual meetings can be scheduled any time
+
+**2. Outreach + Scheduling**
+- Figuring out how to open the calendar for a specific territory visit
+- Sending outreach that lets prospects self-schedule
+- Constraint: in-person slots locked to the territory day/window
+- Virtual slots open always
+
+**3. Route Planning**
+- Once appointments book, plan the most efficient driving route
+- Minimize windshield time between stops
+- Multiple appointments in one day = route optimization problem
+
+**4. Identifying Who to Visit**
+- Out of all prospects in a zone, which are the highest priority?
+- Score and rank before outreach so rep isn't spraying calendar invites
+
+---
+
+### New Feature Concept: Territory Day Planner
+
+**The workflow:**
+1. Rep says: "I'll be in San Antonio northside on March 15"
+2. App surfaces top-ranked prospects within that zone (radius + score)
+3. Rep selects who to reach out to (or auto-selects top N)
+4. App sends personalized outreach with a scheduling link
+   - In-person: only shows slots on March 15 (or whatever territory day)
+   - Virtual: shows any available slot
+5. As prospects book, app builds the day's route
+6. Rep sees optimized route with appointment times + stop order
+7. Day-of: mobile view shows the route, next stop, contact info, notes
+
+**Key product primitives needed:**
+- **Territory zones** — define by city + neighborhood + radius (or draw on map)
+- **Calendar integration** — connect rep's Google/Outlook calendar; block territory days
+- **Smart scheduling links** — Calendly-like but territory-aware (in-person = geo-constrained slots)
+- **Prospect scoring** — rank prospects in a zone by priority before outreach
+- **Route optimizer** — given N booked appointments, return optimal driving order (Google Maps Directions API)
+- **Outreach templates** — personalized per prospect, includes scheduling link
+
+**Why this is differentiated:**
+- Calendly doesn't know you're only in San Antonio on March 15
+- Google Maps doesn't know which stops are high-priority prospects
+- Apollo/ZoomInfo have no concept of territory days or field rep routing
+- No tool combines: prospect scoring + territory scheduling + route planning in one flow
+
+---
+
+### Sprint Implications
+
+This is big enough to be its own sprint cluster — call it **Sprint 13: Territory Day Planner**
+
+**Sprint 13 scope:**
+- Territory zone creation (city + neighborhood + radius)
+- Calendar integration (Google Calendar OAuth)
+- Territory-aware scheduling links (in-person = date-locked, virtual = open)
+- Day route builder with Google Maps Directions API
+- Mobile-optimized day view (rep uses phone between stops)
+- Outreach with scheduling link embedded
+
+**APIs needed:**
+- Google Calendar API (OAuth) — read/write calendar
+- Google Maps Directions API — route optimization (~$5/1,000 requests)
+- Calendly API or build custom — scheduling with slot constraints
