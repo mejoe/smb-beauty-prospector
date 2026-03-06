@@ -571,3 +571,28 @@ This is big enough to be its own sprint cluster — call it **Sprint 13: Territo
 - Google Calendar API (OAuth) — read/write calendar
 - Google Maps Directions API — route optimization (~$5/1,000 requests)
 - Calendly API or build custom — scheduling with slot constraints
+
+---
+
+## Sprint Order — Revised 2026-03-06
+
+### Done
+- Sprint 1 — Foundation (auth, DB, API, React shell)
+- Sprint 2 — AI chat (Claude streaming)
+- Sprint 3 — Company management + 100 companies seeded
+- Sprint 4 — Contact management + 646 contacts seeded
+- Sprint 5 — Instagram enrichment
+
+### Active MVP Build (PRX demo target)
+- Sprint 6 — License data (state esthetician boards — TX first)
+- Sprint 7 — Chrome extension (Instagram profile capture)
+- Sprint 8 — Territory Day Planner + route optimizer
+- Sprint 9 — Data pipeline (Outscraper, Yelp, momentum score, new biz registrations)
+- Sprint 10 — Outreach + smart scheduling links (in-person geo-locked, virtual open)
+- Sprint 11 — Polish + demo-ready seed data
+
+### Parking Lot (post PRX rollout)
+- LinkedIn enrichment
+- CRM lite
+- Event planner
+- Retention campaigns
